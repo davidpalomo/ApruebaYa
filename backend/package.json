@@ -4,7 +4,7 @@
   "description": "Backend para la plataforma de estudio personalizada ApruebaYa",
   "main": "src/infrastructure/server.js",
   "scripts": {
-    "start": "npx prisma migrate deploy && node src/infrastructure/server.js",
+    "start": "node src/infrastructure/server.js",
     "dev": "nodemon src/infrastructure/server.js",
     "test": "jest --coverage",
     "migrate": "prisma migrate dev",
