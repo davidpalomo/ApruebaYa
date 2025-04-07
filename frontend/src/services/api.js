@@ -146,16 +146,34 @@ export const documentService = {
   },
 
   // Subir un documento
-  uploadDocument: async (formData) => {
+  uploadDocument: async (courseId, title, file) => {
     try {
+      const formData = new FormData();
+      formData.append('title', title);
+      formData.append('courseId', courseId);
+      formData.append('file', file);
+
+      console.log(`Subiendo documento "${title}" para el curso ${courseId} con archivo de ${(file.size / 1024 / 1024).toFixed(2)}MB`);
+
       const response = await api.post('/documents', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        withCredentials: true,
+        onUploadProgress: (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          console.log(`Progreso de carga: ${percentCompleted}%`);
+        }
       });
       return response.data;
     } catch (error) {
       console.error('Error al subir documento:', error);
+      // Información adicional de depuración
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.data);
+        console.error('Estado:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
       throw error;
     }
   },
@@ -191,10 +209,18 @@ export const examService = {
   // Generar un examen
   generateExam: async (examData) => {
     try {
+      console.log('Datos para generar examen:', examData);
       const response = await api.post('/exams/generate', examData);
+      console.log('Respuesta de generación de examen:', response.data);
       return response.data;
     } catch (error) {
       console.error('Error al generar examen:', error);
+      // Información adicional de depuración
+      if (error.response) {
+        console.error('Respuesta del servidor:', error.response.data);
+        console.error('Código de estado:', error.response.status);
+        console.error('Headers:', error.response.headers);
+      }
       throw error;
     }
   },
