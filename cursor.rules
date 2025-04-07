@@ -1,0 +1,49 @@
+# Development Guidelines for AI Study App (cursor.rules)
+
+## Environment & Execution
+- **Docker First:** All development, execution, and testing MUST be performed within the Docker containers defined in `docker-compose.yml`. Do not run services or tests directly on the host machine.
+- **Container Target:** Use `docker exec ai_study_backend ...` for running commands (like tests, scripts, pip installs) inside the backend container.
+- **Prohibición de Cambios Manuales:** Nunca realizar cambios manuales directamente en los contenedores en ejecución. Todos los cambios deben aplicarse a través de los archivos de configuración y reconstrucción de imágenes.
+- **No Servicios Locales:** No instalar ningún servicio o dependencia relacionados con el proyecto en la máquina local. Todo debe estar containerizado.
+- **Consultas a BBDD:"" No realizar consultas a BBDD directamente, mostrar la query que quieres ejecutar y solicitar ayuda al usuario para su ejecucion.
+## Dependency Management
+- **Requirements:** All Python dependencies MUST be listed with specific versions in `backend/requirements.txt`.
+- **Installation:** If new dependencies are needed:
+    1. Add them to `backend/requirements.txt`.
+    2. Rebuild the Docker image: `docker-compose build backend` (or `docker-compose build` for all).
+    3. Restart containers if necessary: `docker-compose down && docker-compose up -d`.
+- **Do NOT `pip install` directly into a running container** for permanent changes, as they will be lost upon rebuild. Use it only for temporary checks if needed.
+- **Before using a new Dependency** Check if the code already have one that solves the problem. Example: Don´t use PyPDF2 if pypdf is already in use in the system, unless new functionality for that one is required
+
+## Testing Workflow (TDD)
+- **Test First (Obligatorio):** Adhere strictly to Test-Driven Development (TDD).
+    1. **Write Tests:** Before writing *any* implementation code for a new feature or bug fix, write the necessary unit and/or integration tests in the `backend/tests/` directory (`unit/` or `integration/`). These tests should initially fail.
+    2. **Write Code:** Write the *minimum* amount of implementation code required to make the failing tests pass.
+    3. **Refactor:** Refactor the code (and tests if necessary) while ensuring all tests continue to pass.
+- **Test Execution:** Run tests *inside* the Docker container:
+    - All tests: `docker exec ai_study_backend python -m unittest discover tests`
+    - Specific tests: `docker exec ai_study_backend python -m unittest tests.unit.test_my_service tests.integration.test_my_route` (adjust paths as needed).
+- **Assertions:** Tests should clearly assert the expected behavior and outcomes.
+- **Cobertura:** Buscar mantener una alta cobertura de pruebas para todas las nuevas funcionalidades y correcciones.
+
+## CI/CD
+- **Integración Continua:** Todos los cambios deben pasar por un pipeline de CI que ejecute pruebas automáticas.
+- **Despliegue Continuo:** Los despliegues a producción deben ser automatizados y realizados solo después de que todas las pruebas hayan pasado.
+- **Entornos:** Mantener entornos separados para desarrollo, pruebas y producción, todos basados en la misma configuración Docker.
+- **Scripts de Despliegue:** Utilizar scripts automatizados para el despliegue, evitando pasos manuales que puedan introducir errores.
+
+## Despliegue
+- **Docker Obligatorio:** Todos los despliegues deben realizarse utilizando Docker y Docker Compose.
+- **Configuración por Entorno:** Mantener archivos de configuración específicos para cada entorno (.env.dev, .env.test, .env.prod).
+- **Seguridad:** Nunca incluir credenciales o secretos en el código fuente o imágenes Docker. Utilizar variables de entorno o servicios de gestión de secretos.
+- **Estrategia de Respaldo:** Implementar una estrategia de respaldo para datos críticos, especialmente bases de datos.
+
+## Frontend
+- **Tailwind:** Para la generacion de componentes front usaremos Tailwind
+
+## General
+- **Language:** Communication and documentation should be primarily in Spanish.
+- **Terminal usage:** The curl format should use windows format. Use this example: "curl -X POST http://localhost:5001/api/documents/certifications -H "Content-Type: application/json" -d '{"name": "AWS Certified", "description": "Amazon Web Services Certification"}'"
+- **Code Style:** Follow PEP 8 guidelines for Python code.
+- **Documentation:** All significant changes to the system (architecture, database schema, core logic, API endpoints, etc.) MUST be documented in the relevant files within the `docs/` directory (e.g., `ARQUITECTURA.md`, data model descriptions, API documentation). Update documentation *as part of the change itself*, not as an afterthought.
+- **Contexto del Proyecto:** Mantener actualizada la documentación de contexto y prompts para facilitar la continuidad del desarrollo. 

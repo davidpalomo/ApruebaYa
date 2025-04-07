@@ -1,17 +1,33 @@
 {
-  "name": "vercel",
-  "version": "31.0.1",
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/node",
+      "config": { "maxLambdaSize": "50mb" }
+    }
+  ],
   "routes": [
-    { "src": "/api/(.*)", "dest": "https://apruebaYa-backend.up.railway.app/api/$1" },
+    { 
+      "src": "/api/(.*)", 
+      "dest": "https://apruebaYa-backend.up.railway.app/api/$1",
+      "headers": {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
+        "Access-Control-Allow-Headers": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization"
+      }
+    },
     { "handle": "filesystem" },
     { "src": "/assets/(.*)", "dest": "/assets/$1" },
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://apruebaYa-backend.up.railway.app/api"
+    "REACT_APP_API_URL": "https://apruebaYa-backend.up.railway.app/api",
+    "NODE_ENV": "production"
   },
   "github": {
     "enabled": true,
-    "silent": false
+    "silent": false,
+    "autoAlias": true
   }
 }
