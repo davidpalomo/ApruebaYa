@@ -7,7 +7,28 @@ on:
     branches: [ main, master ]
 
 jobs:
-  test:
+  test-frontend:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: frontend/package-lock.json
+        
+    - name: Install Dependencies (Frontend)
+      working-directory: ./frontend
+      run: npm install
+        
+    - name: Run Frontend Tests
+      working-directory: ./frontend
+      run: npm test -- --passWithNoTests
+        
+  test-backend:
     runs-on: ubuntu-latest
     
     services:
@@ -33,6 +54,7 @@ jobs:
       with:
         node-version: '18'
         cache: 'npm'
+        cache-dependency-path: backend/package-lock.json
         
     - name: Install Dependencies (Backend)
       working-directory: ./backend
@@ -45,16 +67,8 @@ jobs:
         JWT_SECRET: test_secret
       run: npm test
         
-    - name: Install Dependencies (Frontend)
-      working-directory: ./frontend
-      run: npm install
-        
-    - name: Run Frontend Tests
-      working-directory: ./frontend
-      run: npm test -- --passWithNoTests
-        
   deploy:
-    needs: test
+    needs: [test-frontend, test-backend]
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
     
@@ -64,7 +78,7 @@ jobs:
     - name: Install Vercel CLI
       run: npm install --global vercel@latest
 
-    - name: Deploy to Vercel
+    - name: Deploy Frontend to Vercel
       env:
         VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
         VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
