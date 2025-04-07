@@ -69,7 +69,12 @@ router.post('/generate',
   ],
   async (req, res) => {
     try {
+      console.log('Solicitud de generación de examen recibida:', req.body);
+      
       const { courseId, title, description, duration, questionCount, questionTypes } = req.body;
+      
+      console.log('Verificando disponibilidad de API key:', process.env.GEMINI_API_KEY ? 'Configurada' : 'No configurada');
+      
       const exam = await generateExamUseCase.execute(
         courseId,
         title,
@@ -78,10 +83,25 @@ router.post('/generate',
         questionCount,
         questionTypes
       );
-      res.status(201).json(exam);
+      
+      console.log('Examen generado correctamente:', exam.id);
+      res.status(201).json({ exam, status: 'success' });
     } catch (error) {
-      console.error('Error al generar examen:', error);
-      res.status(500).json({ message: 'Error al generar examen', error: error.message });
+      console.error('Error detallado al generar examen:', error);
+      
+      // Crear un mensaje de error más detallado
+      let errorDetail = error.message || 'Error desconocido';
+      
+      // Si el error proviene del servicio de IA, proporcionar más contexto
+      if (errorDetail.includes('API key not valid') || errorDetail.includes('Gemini')) {
+        errorDetail = `Error al llamar a la API de Gemini: ${errorDetail}. Verifique la configuración de GEMINI_API_KEY.`;
+      }
+      
+      res.status(500).json({ 
+        message: 'Error al generar examen', 
+        error: errorDetail,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
     }
   }
 );

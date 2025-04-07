@@ -18,7 +18,7 @@
   "rewrites": [
     { 
       "source": "/api/:path*", 
-      "destination": "http://apruebaya-backend-prod.eba-shidhbqx.us-east-1.elasticbeanstalk.com/api/:path*"
+      "destination": "https://apruebaya-backend-prod.eba-shidhbqx.us-east-1.elasticbeanstalk.com/api/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
   ],

@@ -8,7 +8,17 @@ const path = require('path');
 class GeminiAIService extends AIService {
   constructor() {
     super();
-    this.apiKey = process.env.GEMINI_API_KEY || 'AIzaSyAI-6CP00lorMekdzC_T9B8hO8wU389uIo';
+    // Usar la variable de entorno para la API key
+    this.apiKey = process.env.GEMINI_API_KEY;
+    
+    // Validación y logging para depuración
+    if (!this.apiKey) {
+      console.error('⚠️ ERROR: GEMINI_API_KEY no está configurada en las variables de entorno');
+      throw new Error('GEMINI_API_KEY no está configurada. Este servicio requiere una API key válida.');
+    }
+    
+    console.log(`GeminiAIService inicializado. API Key configurada: ${this.apiKey ? '✅ SÍ' : '❌ NO'}`);
+    
     this.model = 'gemini-2.0-flash';
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models';
     this.cache = new LRUCache({ max: 100, ttl: 1000 * 60 * 60 }); // Cache de 1 hora
@@ -458,13 +468,28 @@ class GeminiAIService extends AIService {
 
   async generateExam(courseId, documentIds, questionCount, questionTypes = ['MULTIPLE_CHOICE', 'TRUE_FALSE']) {
     try {
-      console.log(`Generando examen para curso ${courseId} con ${questionCount} preguntas`);
+      // Verificar que la API key esté configurada
+      if (!this.apiKey || this.apiKey.trim() === '') {
+        console.error('❌ Error crítico: API key de Gemini no configurada');
+        throw new Error('API key de Gemini no configurada. Este servicio requiere una API key válida.');
+      }
+      
+      console.log(`⏳ Generando examen para curso ${courseId} con ${questionCount} preguntas. Tipos: ${questionTypes.join(', ')}`);
+      console.log(`📋 Documentos a procesar: ${documentIds.length} documentos.`);
       
       // Obtener el contenido real de los documentos
       const documents = await this._getDocumentContent(documentIds);
+      console.log(`📚 Documentos obtenidos: ${documents.length}`);
+      
+      if (!documents || documents.length === 0) {
+        throw new Error('No se encontraron documentos para generar el examen');
+      }
+      
       const documentContent = documents.map(doc => 
         `Documento: ${doc.title}\n${doc.content}`
       ).join('\n\n');
+      
+      console.log(`📄 Longitud total del contenido: ${documentContent.length} caracteres`);
       
       // Crear el prompt para Gemini con instrucciones más claras
       const prompt = `
@@ -496,8 +521,12 @@ class GeminiAIService extends AIService {
         ]
       `;
       
+      console.log('📤 Enviando prompt a Gemini API...');
+      console.log(`🔑 API Key utilizada: ${this.apiKey.substring(0, 5)}...${this.apiKey.substring(this.apiKey.length - 3)}`);
+      
       // Llamar a la API de Gemini
       const response = await this._callGeminiAPI(prompt, 0.7);
+      console.log('📥 Respuesta recibida de Gemini API');
       
       try {
         // Limpiar la respuesta de posibles caracteres adicionales
@@ -512,18 +541,18 @@ class GeminiAIService extends AIService {
         
         // Intentar parsear la respuesta limpia
         const jsonResponse = JSON.parse(cleanedResponse);
-        console.log(`Examen generado con ${jsonResponse.length || 0} preguntas`);
+        console.log(`✅ Examen generado con ${jsonResponse.length || 0} preguntas`);
         
         // Verificar que el JSON tiene la estructura esperada
         if (!Array.isArray(jsonResponse)) {
-          console.error('La respuesta JSON no es un array de preguntas', jsonResponse);
+          console.error('❌ La respuesta JSON no es un array de preguntas', jsonResponse);
           throw new Error('La respuesta JSON no tiene la estructura esperada');
         }
         
         return jsonResponse;
       } catch (parseError) {
-        console.error('Error al parsear la respuesta JSON inicial:', parseError);
-        console.log('Respuesta recibida:', response);
+        console.error('❌ Error al parsear la respuesta JSON inicial:', parseError);
+        console.log('📄 Respuesta recibida:', response.substring(0, 500) + '...');
         
         // Intentar múltiples estrategias para extraer JSON
         const strategies = [
@@ -544,13 +573,13 @@ class GeminiAIService extends AIService {
             try {
               const content = typeof match === 'string' ? match : match[1] || match[0];
               const extractedJson = JSON.parse(content);
-              console.log('JSON extraído correctamente de la respuesta usando estrategia alternativa');
+              console.log('📑 JSON extraído correctamente de la respuesta usando estrategia alternativa');
               
               // Verificar que el JSON extraído tiene la estructura esperada
               if (Array.isArray(extractedJson)) {
                 return extractedJson;
               } else {
-                console.error('El JSON extraído no es un array válido', extractedJson);
+                console.error('❌ El JSON extraído no es un array válido', extractedJson);
               }
             } catch (err) {
               // Continuar con la siguiente estrategia
@@ -559,10 +588,10 @@ class GeminiAIService extends AIService {
         }
         
         // Si todas las estrategias fallan, lanzar error
-        throw new Error('No se pudo obtener un JSON válido de la respuesta de la API');
+        throw new Error('No se pudo obtener un JSON válido de la respuesta de la API. Compruebe que la API key sea válida y tenga permisos suficientes.');
       }
     } catch (error) {
-      console.error('Error al generar el examen:', error);
+      console.error('❌ Error al generar el examen:', error);
       throw new Error(`Error al generar el examen: ${error.message}`);
     }
   }
