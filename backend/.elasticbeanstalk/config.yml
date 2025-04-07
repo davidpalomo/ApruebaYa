@@ -1,0 +1,20 @@
+branch-defaults:
+  main:
+    environment: apruebaYa-backend-prod
+    group_suffix: null
+
+global:
+  application_name: apruebaYa-backend
+  branch: null
+  default_ec2_keyname: null
+  default_platform: Node.js 18
+  default_region: us-east-1
+  include_git_submodules: true
+  instance_profile: aws-elasticbeanstalk-ec2-role
+  platform_name: null
+  platform_version: null
+  profile: null
+  repository: null
+  sc: git
+  service_role: aws-elasticbeanstalk-service-role
+  workspace_type: Application 

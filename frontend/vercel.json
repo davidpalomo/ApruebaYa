@@ -7,7 +7,7 @@
   "routes": [
     { 
       "src": "/api/(.*)", 
-      "dest": "https://apruebaYa-backend.up.railway.app/api/$1",
+      "dest": "https://apruebaya-backend-prod.us-east-1.elasticbeanstalk.com/api/$1",
       "headers": {
         "Access-Control-Allow-Origin": "*",
         "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS",
@@ -19,7 +19,7 @@
     { "src": "/(.*)", "dest": "/index.html" }
   ],
   "env": {
-    "REACT_APP_API_URL": "https://apruebaYa-backend.up.railway.app/api",
+    "REACT_APP_API_URL": "https://apruebaya-backend-prod.us-east-1.elasticbeanstalk.com/api",
     "NODE_ENV": "production"
   },
   "github": {
