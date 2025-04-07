@@ -53,7 +53,7 @@ jobs:
         mkdir -p .elasticbeanstalk
         echo "service_role: aws-elasticbeanstalk-service-role" >> .elasticbeanstalk/config.yml
         echo "instance_profile: aws-elasticbeanstalk-ec2-role" >> .elasticbeanstalk/config.yml
-        eb use apruebaYa-backend-prod
+        eb use apruebaYa-backend-prod || eb create apruebaYa-backend-prod
         eb deploy --staged
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
