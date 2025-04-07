@@ -1,7 +1,19 @@
 // Servicio para comunicarse con la API
 import axios from 'axios';
 
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+// Intentar usar la URL de la API de la configuración global si está disponible
+const getApiUrl = () => {
+  // Verificar si hay una URL configurada desde el script en index.html
+  if (window._env_ && window._env_.API_URL) {
+    console.log('Usando API_URL de configuración global:', window._env_.API_URL);
+    return window._env_.API_URL;
+  }
+  // Caer de vuelta a la variable de entorno o valor por defecto
+  return process.env.REACT_APP_API_URL || 'http://localhost:3001';
+};
+
+const API_URL = getApiUrl();
+console.log('API URL configurada como:', API_URL);
 
 // Configuración de Axios con interceptores para manejo de errores
 const api = axios.create({
@@ -9,20 +21,42 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: false
 });
 
-// Interceptor para manejar errores de red o del servidor
+// Interceptor para solicitudes (request)
+api.interceptors.request.use(
+  config => {
+    console.log('Realizando solicitud a:', config.baseURL + config.url);
+    return config;
+  },
+  error => {
+    console.error('Error en la configuración de la solicitud:', error);
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para respuestas (response)
 api.interceptors.response.use(
-  response => response,
+  response => {
+    console.log('Respuesta exitosa de:', response.config.url);
+    return response;
+  },
   error => {
     console.error('Error en la solicitud API:', error);
     
     if (error.response) {
       // El servidor respondió con un código de estado diferente de 2xx
       console.error('Respuesta del servidor:', error.response.data);
+      console.error('Código de estado:', error.response.status);
+      console.error('Headers:', error.response.headers);
     } else if (error.request) {
       // La solicitud se realizó pero no se recibió respuesta
-      console.error('No se recibió respuesta del servidor');
+      console.error('No se recibió respuesta del servidor. Detalles de la solicitud:', error.request);
+      console.error('URL solicitada:', error.config.baseURL + error.config.url);
+    } else {
+      // Algo sucedió en la configuración de la solicitud que desencadenó un error
+      console.error('Error en la configuración de la solicitud:', error.message);
     }
     
     return Promise.reject(error);

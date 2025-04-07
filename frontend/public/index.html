@@ -25,6 +25,19 @@
       Learn how to configure a non-root public URL by running `npm run build`.
     -->
     <title>ApruebaYa</title>
+    <script>
+      // Este script detecta si estamos en HTTPS y ajusta la URL base de la API según corresponda
+      window.handleApiUrl = function() {
+        // Solo realizamos ajustes si estamos en producción
+        if (window.location.hostname !== 'localhost') {
+          window._env_ = window._env_ || {};
+          window._env_.API_URL = '/api';
+          console.log('API URL configurada como:', window._env_.API_URL);
+        }
+      };
+      // Ejecutar inmediatamente
+      handleApiUrl();
+    </script>
   </head>
   <body>
     <noscript>You need to enable JavaScript to run this app.</noscript>
