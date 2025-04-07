@@ -2,7 +2,7 @@ name: Deploy Backend to AWS Elastic Beanstalk
 
 on:
   push:
-    branches: [ main ]
+    branches: [ master ]
     paths:
       - 'backend/**'
       - '.github/workflows/backend-deploy.yml'
@@ -50,10 +50,10 @@ jobs:
     - name: Deploy to Elastic Beanstalk
       run: |
         eb init -p "Node.js 18" --region us-east-1 apruebaYa-backend
-        eb use apruebaYa-backend-prod
         mkdir -p .elasticbeanstalk
         echo "service_role: aws-elasticbeanstalk-service-role" >> .elasticbeanstalk/config.yml
         echo "instance_profile: aws-elasticbeanstalk-ec2-role" >> .elasticbeanstalk/config.yml
+        eb use apruebaYa-backend-prod
         eb deploy --staged
       env:
         DATABASE_URL: ${{ secrets.DATABASE_URL }}
