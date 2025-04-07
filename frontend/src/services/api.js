@@ -3,12 +3,31 @@ import axios from 'axios';
 
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 
+// Configuración de Axios con interceptores para manejo de errores
 const api = axios.create({
   baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+// Interceptor para manejar errores de red o del servidor
+api.interceptors.response.use(
+  response => response,
+  error => {
+    console.error('Error en la solicitud API:', error);
+    
+    if (error.response) {
+      // El servidor respondió con un código de estado diferente de 2xx
+      console.error('Respuesta del servidor:', error.response.data);
+    } else if (error.request) {
+      // La solicitud se realizó pero no se recibió respuesta
+      console.error('No se recibió respuesta del servidor');
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Servicios para cursos
 export const courseService = {
