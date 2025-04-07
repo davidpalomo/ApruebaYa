@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { documentService } from '../services/api';
+import axios from 'axios';
 import { ArrowUpTrayIcon as UploadIcon, DocumentTextIcon, XMarkIcon as XIcon } from '@heroicons/react/24/outline';
 
 const DocumentUpload = () => {
@@ -13,10 +14,19 @@ const DocumentUpload = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [progress, setProgress] = useState(0);
+  
+  // Tamaño máximo del archivo en bytes (5MB)
+  const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile) {
+      if (selectedFile.size > MAX_FILE_SIZE) {
+        setError(`El archivo es demasiado grande. El tamaño máximo permitido es 5MB. El archivo seleccionado es de ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB.`);
+        return;
+      }
+      
+      setError(null);
       setFile(selectedFile);
       setFileName(selectedFile.name);
       // Si no hay título, usar el nombre del archivo como título por defecto
@@ -36,6 +46,12 @@ const DocumentUpload = () => {
     e.preventDefault();
     const droppedFile = e.dataTransfer.files[0];
     if (droppedFile) {
+      if (droppedFile.size > MAX_FILE_SIZE) {
+        setError(`El archivo es demasiado grande. El tamaño máximo permitido es 5MB. El archivo seleccionado es de ${(droppedFile.size / 1024 / 1024).toFixed(2)}MB.`);
+        return;
+      }
+      
+      setError(null);
       setFile(droppedFile);
       setFileName(droppedFile.name);
       // Si no hay título, usar el nombre del archivo como título por defecto
@@ -50,6 +66,7 @@ const DocumentUpload = () => {
   const clearFile = () => {
     setFile(null);
     setFileName('');
+    setError(null);
   };
 
   const handleSubmit = async (e) => {
@@ -57,6 +74,11 @@ const DocumentUpload = () => {
     
     if (!file) {
       setError('Por favor, selecciona un archivo para subir.');
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setError(`El archivo es demasiado grande. El tamaño máximo permitido es 5MB. Tu archivo es de ${(file.size / 1024 / 1024).toFixed(2)}MB.`);
       return;
     }
 
@@ -82,7 +104,16 @@ const DocumentUpload = () => {
       formData.append('courseId', courseId);
       formData.append('file', file);
 
-      await documentService.uploadDocument(formData);
+      // Usar directamente la URL del backend en lugar de pasar por el proxy de Vercel
+      const apiUrl = process.env.NODE_ENV === 'production' 
+        ? 'http://apruebaya-backend-prod.eba-shidhbqx.us-east-1.elasticbeanstalk.com/api/documents'
+        : 'http://localhost:3001/api/documents';
+        
+      await axios.post(apiUrl, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       
       clearInterval(progressInterval);
       setProgress(100);
@@ -94,7 +125,7 @@ const DocumentUpload = () => {
     } catch (err) {
       clearInterval(progressInterval);
       setProgress(0);
-      setError('Error al subir el documento. Por favor, inténtalo de nuevo.');
+      setError(`Error al subir el documento: ${err.message || 'Por favor, inténtalo de nuevo con un archivo más pequeño.'}`);
       setLoading(false);
     }
   };
@@ -155,7 +186,7 @@ const DocumentUpload = () => {
                     </label>
                   </p>
                   <p className="mt-1 text-xs text-gray-400">
-                    PDF, Word, TXT o imágenes (máx. 10MB)
+                    PDF, Word, TXT o imágenes (máx. 5MB)
                   </p>
                 </div>
               ) : (
