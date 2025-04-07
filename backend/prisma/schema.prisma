@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  documents   Document[]
+  exams       Exam[]
+  sessions    Session[]
+}
+
+model Document {
+  id          String        @id @default(uuid())
+  title       String
+  fileName    String
+  filePath    String
+  fileType    String
+  content     String?
+  courseId    String
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  course      Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  vectorIndex VectorIndex[]
+  topics      Topic[]
+}
+
+model VectorIndex {
+  id         String   @id @default(uuid())
+  documentId String
+  chunk      String
+  embedding  String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  duration    Int
+  courseId    String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topics      Topic[]
+}
+
+model Topic {
+  id          String    @id @default(uuid())
+  title       String
+  content     String
+  priority    Int
+  completed   Boolean   @default(false)
+  sessionId   String
+  documentId  String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  session     Session   @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  document    Document? @relation(fields: [documentId], references: [id], onDelete: SetNull)
+}
+
+model Exam {
+  id           String        @id @default(uuid())
+  title        String
+  description  String?
+  duration     Int
+  passingScore Int
+  courseId     String
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  course       Course        @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  attempts     ExamAttempt[]
+  questions    Question[]
+}
+
+model Question {
+  id          String     @id @default(uuid())
+  content     String
+  type        String
+  options     String?
+  answer      String
+  explanation String?
+  points      Int
+  examId      String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  exam        Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  responses   Response[]
+}
+
+model ExamAttempt {
+  id        String     @id @default(uuid())
+  examId    String
+  startTime DateTime
+  endTime   DateTime?
+  score     Int?
+  status    String
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  exam      Exam       @relation(fields: [examId], references: [id], onDelete: Cascade)
+  responses Response[]
+}
+
+model Response {
+  id         String      @id @default(uuid())
+  questionId String
+  attemptId  String
+  answer     String
+  isCorrect  Boolean
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  attempt    ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+  question   Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}

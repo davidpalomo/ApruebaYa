@@ -1,0 +1,26 @@
+# Dependencias para el proyecto ApruebaYa
+
+# Dependencias del sistema para Docker
+# Estas deben instalarse en el Dockerfile con:
+# RUN apk add --no-cache tesseract-ocr python3 make g++ build-base
+
+# Dependencias de Python para OCR y procesamiento de documentos
+pytesseract==0.3.10
+pdf2image==1.16.3
+numpy==1.24.3
+Pillow==10.0.0
+opencv-python==4.8.0.74
+
+# Dependencias para el motor RAG
+haystack-ai==1.20.0
+faiss-cpu==1.7.4
+sentence-transformers==2.2.2
+langchain==0.0.267
+langchain-community==0.0.10
+
+# Dependencias para la API de Gemini
+google-generativeai==0.3.1
+protobuf==4.23.4
+
+# Nota: Las dependencias de Node.js (backend y frontend) están en sus respectivos package.json
+# No se incluyen aquí para evitar confusiones, ya que este archivo es para dependencias de Python

@@ -1,0 +1,162 @@
+// This is a schema file for Prisma ORM
+// It defines the data model for the ApruebaYa application
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Modelo para los cursos
+model Course {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relaciones
+  documents   Document[]
+  sessions    Session[]
+  exams       Exam[]
+}
+
+// Modelo para los documentos subidos
+model Document {
+  id          String   @id @default(uuid())
+  title       String
+  fileName    String
+  filePath    String
+  fileType    String
+  content     String?  @db.Text
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  vectorIndex VectorIndex?
+}
+
+// Modelo para el índice vectorial de documentos
+model VectorIndex {
+  id          String   @id @default(uuid())
+  indexPath   String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  documentId  String   @unique
+  document    Document @relation(fields: [documentId], references: [id], onDelete: Cascade)
+}
+
+// Modelo para las sesiones de estudio
+model Session {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime?
+  duration    Int?     // Duración en minutos
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  topics      Topic[]
+}
+
+// Modelo para los temas de estudio
+model Topic {
+  id          String   @id @default(uuid())
+  title       String
+  content     String?  @db.Text
+  priority    Int      @default(1) // 1-5, donde 5 es la prioridad más alta
+  completed   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  sessionId   String
+  session     Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+}
+
+// Modelo para los exámenes
+model Exam {
+  id          String   @id @default(uuid())
+  title       String
+  description String?
+  duration    Int?     // Duración en minutos
+  passingScore Int     @default(60) // Puntuación para aprobar (%)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  questions   Question[]
+  attempts    ExamAttempt[]
+}
+
+// Modelo para las preguntas de examen
+model Question {
+  id          String   @id @default(uuid())
+  content     String   @db.Text
+  type        QuestionType
+  options     Json?    // Para preguntas de opción múltiple
+  answer      String   @db.Text
+  explanation String?  @db.Text
+  points      Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  responses   Response[]
+}
+
+// Modelo para los intentos de examen
+model ExamAttempt {
+  id          String   @id @default(uuid())
+  startTime   DateTime @default(now())
+  endTime     DateTime?
+  score       Float?
+  passed      Boolean?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  examId      String
+  exam        Exam     @relation(fields: [examId], references: [id], onDelete: Cascade)
+  responses   Response[]
+}
+
+// Modelo para las respuestas a preguntas
+model Response {
+  id          String   @id @default(uuid())
+  content     String   @db.Text
+  isCorrect   Boolean?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relaciones
+  questionId  String
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  attemptId   String
+  attempt     ExamAttempt @relation(fields: [attemptId], references: [id], onDelete: Cascade)
+}
+
+// Enumeración para tipos de preguntas
+enum QuestionType {
+  MULTIPLE_CHOICE
+  TRUE_FALSE
+  SHORT_ANSWER
+  ESSAY
+  CASE_STUDY
+}
