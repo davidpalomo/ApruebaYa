@@ -17,14 +17,35 @@ const PrismaExamAttemptRepository = require('../repositories/PrismaExamAttemptRe
 const PrismaResponseRepository = require('../repositories/PrismaResponseRepository');
 const GeminiAIService = require('../services/GeminiAIService');
 
-// Crear instancias de repositorios y servicios
+// Función para validar campos
+const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ 
+      message: 'Error de validación', 
+      errors: errors.array() 
+    });
+  }
+  next();
+};
+
+// Crear instancias de repositorios
 const courseRepository = new PrismaCourseRepository();
 const documentRepository = new PrismaDocumentRepository();
 const examRepository = new PrismaExamRepository();
 const questionRepository = new PrismaQuestionRepository();
 const examAttemptRepository = new PrismaExamAttemptRepository();
 const responseRepository = new PrismaResponseRepository();
-const aiService = new GeminiAIService();
+
+// Crear instancia del servicio de IA con manejo seguro de errores
+let aiService;
+try {
+  aiService = new GeminiAIService();
+} catch (error) {
+  console.error('❌ Error al inicializar el servicio de IA:', error);
+  // No interrumpir la inicialización del controlador, 
+  // los endpoints que requieran IA manejarán el error
+}
 
 // Crear instancias de casos de uso
 const generateExamUseCase = new GenerateExamUseCase(
@@ -49,15 +70,6 @@ const submitExamResponsesUseCase = new SubmitExamResponsesUseCase(
   responseRepository
 );
 
-// Middleware para validar errores
-const validate = (req, res, next) => {
-  const errors = validationResult(req);
-  if (!errors.isEmpty()) {
-    return res.status(400).json({ errors: errors.array() });
-  }
-  next();
-};
-
 // Generar un examen
 router.post('/generate',
   [
@@ -70,6 +82,11 @@ router.post('/generate',
   async (req, res) => {
     try {
       console.log('Solicitud de generación de examen recibida:', req.body);
+      
+      // Verificar que el servicio de IA esté disponible
+      if (!aiService) {
+        throw new Error('El servicio de IA no está disponible. Verifique la configuración del sistema.');
+      }
       
       const { courseId, title, description, duration, questionCount, questionTypes } = req.body;
       
@@ -89,18 +106,27 @@ router.post('/generate',
     } catch (error) {
       console.error('Error detallado al generar examen:', error);
       
-      // Crear un mensaje de error más detallado
-      let errorDetail = error.message || 'Error desconocido';
+      // Crear un mensaje de error genérico sin exponer información sensible
+      let errorMessage = 'Error al generar el examen. ';
       
-      // Si el error proviene del servicio de IA, proporcionar más contexto
-      if (errorDetail.includes('API key not valid') || errorDetail.includes('Gemini')) {
-        errorDetail = `Error al llamar a la API de Gemini: ${errorDetail}. Verifique la configuración de GEMINI_API_KEY.`;
+      // Personalizar el mensaje según el tipo de error
+      if (error.message.includes('API key') || error.message.includes('Gemini')) {
+        errorMessage += 'Error de configuración en el servicio de IA. Contacte al administrador del sistema.';
+      } else if (error.message.includes('documento')) {
+        errorMessage += 'No se encontraron documentos asociados al curso.';
+      } else if (error.message.includes('curso')) {
+        errorMessage += 'Curso no encontrado o no válido.';
+      } else {
+        errorMessage += error.message;
       }
       
       res.status(500).json({ 
         message: 'Error al generar examen', 
-        error: errorDetail,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        error: errorMessage,
+        // Incluir stack solo en desarrollo y sin información sensible
+        stack: process.env.NODE_ENV === 'development' ? 
+          error.stack?.replace(/API[_-]?[kK]ey[^,;\s]*/, '[API_KEY_REDACTED]') : 
+          undefined
       });
     }
   }

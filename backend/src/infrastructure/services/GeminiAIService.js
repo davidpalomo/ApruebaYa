@@ -13,9 +13,8 @@ class GeminiAIService extends AIService {
     
     // Validación y logging para depuración
     if (!this.apiKey) {
-      console.error('⚠️ ADVERTENCIA: GEMINI_API_KEY no está configurada en las variables de entorno, usando clave por defecto');
-      // Usar una API key de respaldo como último recurso
-      this.apiKey = 'AIzaSyAI-6CP00lorMekdzC_T9B8hO8wU389uIo';
+      console.error('⚠️ ERROR: GEMINI_API_KEY no está configurada en las variables de entorno');
+      throw new Error('GEMINI_API_KEY no está configurada. Este servicio requiere una API key válida en las variables de entorno.');
     }
     
     console.log(`GeminiAIService inicializado. API Key configurada: ${this.apiKey ? '✅ SÍ' : '❌ NO'}`);
@@ -472,7 +471,7 @@ class GeminiAIService extends AIService {
       // Verificar que la API key esté configurada
       if (!this.apiKey || this.apiKey.trim() === '') {
         console.error('❌ Error crítico: API key de Gemini no configurada');
-        throw new Error('API key de Gemini no configurada. Este servicio requiere una API key válida.');
+        throw new Error('API key de Gemini no configurada. Este servicio requiere una API key válida en las variables de entorno.');
       }
       
       console.log(`⏳ Generando examen para curso ${courseId} con ${questionCount} preguntas. Tipos: ${questionTypes.join(', ')}`);
@@ -523,7 +522,8 @@ class GeminiAIService extends AIService {
       `;
       
       console.log('📤 Enviando prompt a Gemini API...');
-      console.log(`🔑 API Key utilizada: ${this.apiKey.substring(0, 5)}...${this.apiKey.substring(this.apiKey.length - 3)}`);
+      // Evitar mostrar cualquier parte de la API key en logs
+      console.log('🔑 Usando API Key configurada en las variables de entorno');
       
       // Llamar a la API de Gemini
       const response = await this._callGeminiAPI(prompt, 0.7);
